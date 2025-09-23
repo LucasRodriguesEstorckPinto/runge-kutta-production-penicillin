@@ -133,14 +133,14 @@ function analise_convergencia_completa(g0, f0, t_max)
     println("ANÁLISE DE CONVERGÊNCIA NUMÉRICA")
     println("="^60)
     
-    # Valores de Δt para teste de convergência (começando com 0.05 conforme especificação)
+    # Valores de Δt para teste de convergência
     dt_values = [0.05, 0.025, 0.01, 0.005, 0.001]
     resultados = SimulationResult[]
     
     println("Testando convergência com diferentes valores de Δt:")
     println("-"^60)
     
-    # Solução de referência com Δt muito pequeno
+    # Solução de referência com Δt pequeno
     println("Calculando solução de referência (Δt = 0.0005)...")
     t_ref, g_ref, f_ref = runge_kutta_4(g0, f0, 0.0005, t_max, PARAMS_ORIGINAL)
     
@@ -193,7 +193,7 @@ function analise_convergencia_completa(g0, f0, t_max)
     return resultados
 end
 
-# Função para plotar resultados principais (conforme requisito 3)
+# Função para plotar resultados principais
 function plotar_resultados_principais(resultados)
     """
     Gera os gráficos principais dos resultados conforme especificação
@@ -272,7 +272,7 @@ function plotar_resultados_principais(resultados)
     return p1, p2, p3
 end
 
-# Função para análise de sensibilidade (requisito 4)
+# Função para análise de sensibilidade
 function analise_sensibilidade_coeficientes(g0, f0, t_max, dt_base)
     """
     Análise de sensibilidade quando da variação de coeficientes das equações
@@ -486,21 +486,21 @@ function main()
     println("Linguagem: Julia")
     println("Data: $(Dates.now())")
     
-    # PARÂMETROS DO PROBLEMA (conforme especificação)
+    # PARÂMETROS DO PROBLEMA
     g0 = 0.03     # g(0) = 0.03
     f0 = 0.0      # f(0) = 0.0  
     t_max = 1.0   # 0 ≤ t ≤ 1
-    dt_inicial = 0.05  # Δt inicial = 0.05 (conforme requisito 2)
+    dt_inicial = 0.05  # Δt inicial = 0.05
     
-    # 1. ANÁLISE DE CONVERGÊNCIA (requisitos 2 e 3)
+    # 1. ANÁLISE DE CONVERGÊNCIA
     println("\n1️ EXECUTANDO ANÁLISE DE CONVERGÊNCIA...")
     resultados_convergencia = analise_convergencia_completa(g0, f0, t_max)
     
-    # 2. PLOTAR RESULTADOS PRINCIPAIS (requisito 3)
+    # 2. PLOTAR RESULTADOS PRINCIPAIS 
     println("\n2️ GERANDO GRÁFICOS DOS RESULTADOS...")
     plotar_resultados_principais(resultados_convergencia)
     
-    # 3. ANÁLISE DE SENSIBILIDADE (requisito 4)
+    # 3. ANÁLISE DE SENSIBILIDADE 
     println("\n3️ EXECUTANDO ANÁLISE DE SENSIBILIDADE...")
     resultados_sensibilidade = analise_sensibilidade_coeficientes(g0, f0, t_max, 0.01)
     
