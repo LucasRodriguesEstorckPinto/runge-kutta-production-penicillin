@@ -119,6 +119,17 @@ function salvar_resultados_tabela(t, g, f, dt, filename)
         write(file, @sprintf("VALORES FINAIS (t = %.1f):\n", t[end]))
         write(file, @sprintf("• g(%.1f) = %.8f\n", t[end], g[end]))
         write(file, @sprintf("• f(%.1f) = %.8f\n", t[end], f[end]))
+
+        # Análise específica para Δt altos
+        if dt >= 0.5
+            write(file, "\nANÁLISE PARA Δt ALTO:\n")
+            write(file, "• Com Δt = %.1f, utilizamos apenas %d passo(s)\n", dt, length(t)-1)
+            if dt >= 1.0
+                write(file, "• ATENÇÃO: Δt ≥ t_max pode causar instabilidade numérica\n")
+            else
+                write(file, "• Δt alto pode comprometer a precisão da solução\n")
+            end
+        end
     end
     println("Resultados salvos em: $filename")
 end
@@ -134,7 +145,7 @@ function analise_convergencia_completa(g0, f0, t_max)
     println("="^60)
     
     # Valores de Δt para teste de convergência
-    dt_values = [0.05, 0.025, 0.01, 0.005, 0.001]
+    dt_values = [1.0, 0.7, 0.05, 0.025, 0.01, 0.005, 0.001]
     resultados = SimulationResult[]
     
     println("Testando convergência com diferentes valores de Δt:")
@@ -197,13 +208,18 @@ end
 function plotar_resultados_principais(resultados)
     """
     Gera os gráficos principais dos resultados conforme especificação
+    SEPARA gráficos de Δt altos dos normais
     """
     println("\nGerando gráficos dos resultados...")
     
     # Configurar tema dos gráficos
     gr(size=(800, 600), dpi=300)
     
-    # 1. Gráfico da evolução temporal de g(t)
+    # Separar resultados por Δt
+    resultados_normais = filter(r -> r.dt <= 0.05, resultados)
+    resultados_altos = filter(r -> r.dt > 0.05, resultados)
+    
+    # === GRÁFICOS NORMAIS (Δt ≤ 0.05) ===
     p1 = plot(title="Evolução da Concentração de Células g(t)", 
               xlabel="Tempo adimensional (t)", 
               ylabel="Concentração adimensional g(t)",
@@ -211,7 +227,6 @@ function plotar_resultados_principais(resultados)
               grid=true,
               linewidth=2)
     
-    # 2. Gráfico da evolução temporal de f(t) 
     p2 = plot(title="Evolução da Concentração de Penicilina f(t)", 
               xlabel="Tempo adimensional (t)", 
               ylabel="Concentração adimensional f(t)",
@@ -219,7 +234,6 @@ function plotar_resultados_principais(resultados)
               grid=true,
               linewidth=2)
     
-    # 3. Plano de fase g vs f
     p3 = plot(title="Plano de Fase: g(t) vs f(t)", 
               xlabel="Concentração de células g(t)", 
               ylabel="Concentração de penicilina f(t)",
@@ -227,47 +241,90 @@ function plotar_resultados_principais(resultados)
               grid=true,
               linewidth=2)
     
-    # Cores para diferentes Δt
-    cores = [:red, :blue, :green, :orange, :purple]
+    # Cores para Δt normais
+    cores_normais = [:red, :blue, :green, :orange, :purple]
     
-    for (i, res) in enumerate(resultados)
-        cor = cores[min(i, length(cores))]
-        estilo = res.dt == 0.05 ? :solid : (res.dt <= 0.01 ? :dash : :dot)
+    for (i, res) in enumerate(resultados_normais)
+        cor = cores_normais[min(i, length(cores_normais))]
+        estilo = res.dt == 0.05 ? :solid : :dash
         largura = res.dt == 0.05 ? 3 : 2
         
-        plot!(p1, res.t, res.g, 
-              label=res.label, 
-              color=cor, 
-              linestyle=estilo,
-              linewidth=largura)
-        
-        plot!(p2, res.t, res.f, 
-              label=res.label, 
-              color=cor, 
-              linestyle=estilo,
-              linewidth=largura)
-        
-        plot!(p3, res.g, res.f, 
-              label=res.label, 
-              color=cor, 
-              linestyle=estilo,
-              linewidth=largura)
+        plot!(p1, res.t, res.g, label=res.label, color=cor, linestyle=estilo, linewidth=largura)
+        plot!(p2, res.t, res.f, label=res.label, color=cor, linestyle=estilo, linewidth=largura)
+        plot!(p3, res.g, res.f, label=res.label, color=cor, linestyle=estilo, linewidth=largura)
     end
     
-    # Salvar gráficos individuais
+    # === GRÁFICOS ALTOS ===
+    if !isempty(resultados_altos)
+        p4 = plot(title="Evolução de g(t) - Δt ALTOS", 
+                  xlabel="Tempo adimensional (t)", 
+                  ylabel="Concentração adimensional g(t)",
+                  legend=:bottomright,
+                  grid=true,
+                  linewidth=3)
+        
+        p5 = plot(title="Evolução de f(t) - Δt ALTOS", 
+                  xlabel="Tempo adimensional (t)", 
+                  ylabel="Concentração adimensional f(t)",
+                  legend=:bottomright,
+                  grid=true,
+                  linewidth=3)
+        
+        p6 = plot(title="Plano de Fase - Δt ALTOS", 
+                  xlabel="Concentração de células g(t)", 
+                  ylabel="Concentração de penicilina f(t)",
+                  legend=:bottomright,
+                  grid=true,
+                  linewidth=3)
+        
+        # Cores para Δt altos
+        cores_altos = [:red, :orange, :purple]
+        
+        for (i, res) in enumerate(resultados_altos)
+            cor = cores_altos[min(i, length(cores_altos))]
+            marker = res.dt >= 1.0 ? :circle : :square
+            markersize = res.dt >= 1.0 ? 8 : 6
+            
+            plot!(p4, res.t, res.g, label=res.label, color=cor, 
+                  marker=marker, markersize=markersize, linewidth=3)
+            plot!(p5, res.t, res.f, label=res.label, color=cor, 
+                  marker=marker, markersize=markersize, linewidth=3)
+            plot!(p6, res.g, res.f, label=res.label, color=cor, 
+                  marker=marker, markersize=markersize, linewidth=3)
+        end
+        
+        # Salvar gráficos de Δt altos
+        savefig(p4, "evolucao_g_dt_altos.png")
+        savefig(p5, "evolucao_f_dt_altos.png")
+        savefig(p6, "plano_fase_dt_altos.png")
+        
+        # Gráfico combinado para Δt altos
+        p_combined_altos = plot(p4, p5, layout=(2,1), size=(800, 1000))
+        savefig(p_combined_altos, "resultados_dt_altos.png")
+    end
+    
+    # Salvar gráficos normais
     savefig(p1, "evolucao_g_tempo.png")
     savefig(p2, "evolucao_f_tempo.png")
     savefig(p3, "plano_fase.png")
     
-    # Gráfico combinado
+    # Gráfico combinado normal
     p_combined = plot(p1, p2, layout=(2,1), size=(800, 1000))
     savefig(p_combined, "resultados_principais.png")
     
     println("Gráficos principais salvos:")
-    println("• evolucao_g_tempo.png")
-    println("• evolucao_f_tempo.png") 
-    println("• plano_fase.png")
-    println("• resultados_principais.png")
+    println("• evolucao_g_tempo.png (Δt normais)")
+    println("• evolucao_f_tempo.png (Δt normais)")
+    println("• plano_fase.png (Δt normais)")
+    println("• resultados_principais.png (Δt normais)")
+    
+    if !isempty(resultados_altos)
+        println("\nGráficos separados para Δt altos:")
+        println("• evolucao_g_dt_altos.png")
+        println("• evolucao_f_dt_altos.png") 
+        println("• plano_fase_dt_altos.png")
+        println("• resultados_dt_altos.png")
+    end
     
     return p1, p2, p3
 end
